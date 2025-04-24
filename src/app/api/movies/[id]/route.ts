@@ -1,24 +1,15 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { connectDB } from '@/utils/db';
 import { MovieModel } from '@/models/movie';
-import type { NextApiRequest } from 'next';
-import type { NextRequest as AppRouteRequest } from 'next/server';
-import type { NextApiResponse } from 'next';
-
-type Params = {
-  params: {
-    id: string;
-  };
-};
 
 export async function GET(
-  req: AppRouteRequest,
-  { params }: Params
+  req: NextRequest,
+  context: { params: { id: string } }
 ) {
   try {
     await connectDB();
 
-    const movieId = Number(params.id);
+    const movieId = Number(context.params.id);
     if (isNaN(movieId)) {
       return NextResponse.json(
         { error: 'Geçersiz film ID' },
