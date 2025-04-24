@@ -39,14 +39,18 @@ export default function MovieDetail() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Film detayları ve benzer filmleri paralel olarak çek
         const [movieRes, similarRes] = await Promise.all([
           axios.get(`/api/movies/${id}`),
           axios.get(`/api/movies/similar/${id}`)
         ]);
-
-        setMovie(movieRes.data);
-        setSimilarMovies(similarRes.data.movies);
+  
+        console.log('DETAY:', movieRes.data);
+        console.log('BENZER:', similarRes.data);
+  
+        if (movieRes?.data) setMovie(movieRes.data);
+        if (Array.isArray(similarRes?.data?.movies)) {
+          setSimilarMovies(similarRes.data.movies);
+        }
       } catch (error) {
         console.error('Film detayları yüklenirken hata:', error);
       } finally {
