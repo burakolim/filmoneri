@@ -1,24 +1,25 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { connectDB } from '@/utils/db';
 import { MovieModel } from '@/models/movie';
 
+// App Router'da GET fonksiyonu tipi bu şekilde olmalı
 export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  context: { params: { id: string } }
 ) {
   try {
     await connectDB();
-    
-    const movieId = Number(params.id);
+
+    const movieId = Number(context.params.id);
     if (isNaN(movieId)) {
       return NextResponse.json(
         { error: 'Geçersiz film ID' },
         { status: 400 }
       );
     }
-    
+
     const movie = await MovieModel.findOne({ id: movieId });
-    
+
     if (!movie) {
       return NextResponse.json(
         { error: 'Film bulunamadı' },
@@ -33,4 +34,4 @@ export async function GET(
       { status: 500 }
     );
   }
-} 
+}
