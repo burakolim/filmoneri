@@ -8,7 +8,7 @@ import { Movie } from '@/types/movie';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
-export default function Home() {
+export default function HomeContent() {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [page, setPage] = useState(1);
@@ -19,7 +19,6 @@ export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const { user, checkAuth } = useAuth();
 
-  // TMDB kategori ID'leri ve renkleri
   const categories = [
     { id: 28, name: 'Aksiyon', color: 'from-red-500 to-orange-500' },
     { id: 10749, name: 'Romantik', color: 'from-pink-500 to-rose-500' },
@@ -37,19 +36,18 @@ export default function Home() {
       const url = new URL('/api/movies', window.location.origin);
       url.searchParams.set('page', pageNumber.toString());
       url.searchParams.set('sort', sort);
-      
       if (selectedCategory) {
         url.searchParams.set('category', selectedCategory.toString());
       }
-      
+
       const response = await axios.get(url.toString());
-      
+
       if (pageNumber === 1) {
         setMovies(response.data.movies);
       } else {
         setMovies(prev => [...prev, ...response.data.movies]);
       }
-      
+
       setHasMore(response.data.hasMore);
     } catch (error) {
       console.error('Film verileri çekilemedi:', error);
@@ -60,7 +58,6 @@ export default function Home() {
   };
 
   useEffect(() => {
-    // Sayfa yüklendiğinde auth durumunu kontrol et
     checkAuth();
   }, []);
 
@@ -81,7 +78,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen flex">
-      {/* Side Navigation */}
+      {/* Sidebar */}
       <div className={`w-64 glass-effect min-h-screen fixed left-0 top-0 p-6 border-r border-white/10
         transform transition-transform duration-300 ease-in-out z-40
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
@@ -105,7 +102,7 @@ export default function Home() {
                 onClick={() => setSelectedCategory(category.id)}
                 className={`w-full text-left px-4 py-2.5 rounded-full transition-all duration-300 relative group overflow-hidden ${
                   selectedCategory === category.id
-                    ? `bg-gradient-to-r ${category.color} text-white` 
+                    ? `bg-gradient-to-r ${category.color} text-white`
                     : 'text-gray-400 hover:text-white glass-effect'
                 }`}
               >
@@ -126,14 +123,10 @@ export default function Home() {
         <div className="container mx-auto px-8 py-8 mt-20">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             {movies.map((movie, index) => (
-              <MovieCard 
-                key={`${movie.id}-${index}`} 
-                movie={movie} 
-              />
+              <MovieCard key={`${movie.id}-${index}`} movie={movie} />
             ))}
           </div>
-          
-          {/* Daha Fazla Yükle Butonu */}
+
           {hasMore && (
             <div className="mt-8 text-center">
               <button
