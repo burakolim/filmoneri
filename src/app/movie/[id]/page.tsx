@@ -186,7 +186,7 @@ export default function MovieDetail() {
               <div>
                 <h2 className="text-xl font-semibold mb-4 text-white">Türler</h2>
                 <div className="flex gap-2 flex-wrap">
-                {Array.isArray(movie.genre_ids) && movie.genre_ids.map((genreId) => {
+                {(movie.genre_ids ?? movie.genres?.map(g => g.id) ?? []).map((genreId) => {
                     const genre = categories.find(c => c.id === genreId);
                     return genre ? (
                       <span

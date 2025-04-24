@@ -20,6 +20,7 @@ export interface Movie {
   vote_average: number;
   overview: string;
   release_date: string;
-  genre_ids: number[];
+  genre_ids?: number[];
+  genres?: { id: number; name: string }[];
   lastUpdated?: Date;
 }
