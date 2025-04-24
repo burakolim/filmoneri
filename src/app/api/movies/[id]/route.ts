@@ -1,16 +1,24 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { connectDB } from '@/utils/db';
 import { MovieModel } from '@/models/movie';
+import type { NextApiRequest } from 'next';
+import type { NextRequest as AppRouteRequest } from 'next/server';
+import type { NextApiResponse } from 'next';
 
-// App Router'da GET fonksiyonu tipi bu şekilde olmalı
+type Params = {
+  params: {
+    id: string;
+  };
+};
+
 export async function GET(
-  request: NextRequest,
-  context: { params: { id: string } }
+  req: AppRouteRequest,
+  { params }: Params
 ) {
   try {
     await connectDB();
 
-    const movieId = Number(context.params.id);
+    const movieId = Number(params.id);
     if (isNaN(movieId)) {
       return NextResponse.json(
         { error: 'Geçersiz film ID' },
