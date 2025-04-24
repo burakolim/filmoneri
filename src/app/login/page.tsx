@@ -1,20 +1,35 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 
+function RegistrationMessage() {
+  const searchParams = useSearchParams();
+  const registered = searchParams.get('registered');
+
+  if (!registered) return null;
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-green-500/10 border border-green-500/50 text-green-500 px-4 py-3 rounded-lg mb-6"
+    >
+      <p className="text-center text-sm font-medium">
+        Kayıt başarılı! Şimdi giriş yapabilirsiniz.
+      </p>
+    </motion.div>
+  );
+}
+
 export default function Login() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { checkAuth } = useAuth();
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -47,18 +62,11 @@ export default function Login() {
           Giriş Yap
         </h1>
 
-        {searchParams.get('registered') && (
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-green-500/10 border border-green-500/50 text-green-500 px-4 py-3 rounded-lg mb-6"
-          >
-            <p className="text-center text-sm font-medium">
-              Kayıt başarılı! Şimdi giriş yapabilirsiniz.
-            </p>
-          </motion.div>
-        )}
-        
+        {/* ✅ Suspense ile sardık */}
+        <Suspense fallback={null}>
+          <RegistrationMessage />
+        </Suspense>
+
         {error && (
           <motion.div 
             initial={{ opacity: 0 }}
@@ -118,4 +126,4 @@ export default function Login() {
       </motion.div>
     </div>
   );
-} 
+}
