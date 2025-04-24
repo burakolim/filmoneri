@@ -1,11 +1,8 @@
-import { NextResponse, NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/utils/db';
 import { MovieModel } from '@/models/movie';
 
-export async function GET(
-  req: NextRequest,
-  context: { params: { id: string } }
-) {
+export async function GET(req: NextRequest, context: any) {
   try {
     await connectDB();
 
