@@ -1,68 +1,43 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/utils/db';
 import { MovieModel } from '@/models/movie';
 
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(req: NextRequest, context: any) {
   try {
     await connectDB();
-    
-    const movieId = Number(params.id);
+
+    const movieId = Number(context.params.id);
     if (isNaN(movieId)) {
-      return NextResponse.json(
-        { error: 'Geçersiz film ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Geçersiz film ID' }, { status: 400 });
     }
-    
-    // Mevcut filmi bul
-    const currentMovie = await MovieModel.findOne({ id: movieId });
-    if (!currentMovie) {
+
+    const movie = await MovieModel.findOne({ id: movieId });
+
+    if (!movie) {
       return NextResponse.json({ error: 'Film bulunamadı' }, { status: 404 });
     }
 
-    // Benzer filmleri bul
+    // Aynı türden filmlerden rastgele 5 tanesini getiriyoruz
     const similarMovies = await MovieModel.aggregate([
       {
         $match: {
-          id: { $ne: currentMovie.id }, // Mevcut filmi hariç tut
-          genre_ids: { $in: currentMovie.genre_ids }, // En az bir ortak tür
-          vote_average: { 
-            $gte: currentMovie.vote_average - 1.5, // Benzer puan aralığı
-            $lte: currentMovie.vote_average + 1.5 
-          }
+          id: { $ne: movieId },
+          genre_ids: { $in: movie.genre_ids }
         }
       },
-      {
-        $addFields: {
-          // Ortak tür sayısını hesapla
-          commonGenres: {
-            $size: {
-              $setIntersection: ['$genre_ids', currentMovie.genre_ids]
-            }
-          }
-        }
-      },
-      {
-        $sort: {
-          commonGenres: -1, // Ortak tür sayısına göre sırala
-          vote_average: -1, // Sonra puana göre
-          popularity: -1 // Son olarak popülerliğe göre
-        }
-      },
-      {
-        $limit: 5 // Sadece 5 film getir
-      }
+      { $sample: { size: 5 } }
     ]);
 
-    return NextResponse.json({ movies: similarMovies });
+    return NextResponse.json({
+      movie,
+      similar: similarMovies
+    });
+
   } catch (error) {
     console.error('Benzer filmler alınırken hata:', error);
     return NextResponse.json(
-      { error: 'Benzer filmler alınırken bir hata oluştu' },
+      { error: 'Benzer filmler yüklenirken bir hata oluştu' },
       { status: 500 }
     );
   }
-} 
+}
