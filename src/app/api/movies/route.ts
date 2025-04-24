@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { connectDB } from '@/utils/db';
 import { MovieModel } from '@/models/movie';
 import axios from 'axios';
@@ -25,12 +25,11 @@ async function fetchAndStoreMovies() {
     let totalMovies = 0;
     let failedRequests = 0;
 
-    // Farklı kategorileri tanımla ve sayfa sayısını artır
     const endpoints = [
-      { path: 'upcoming', pages: 50 },      // 1000 film
-      { path: 'now_playing', pages: 50 },   // 1000 film
-      { path: 'popular', pages: 100 },      // 2000 film
-      { path: 'top_rated', pages: 100 }     // 2000 film
+      { path: 'upcoming', pages: 50 },
+      { path: 'now_playing', pages: 50 },
+      { path: 'popular', pages: 100 },
+      { path: 'top_rated', pages: 100 }
     ];
 
     for (const endpoint of endpoints) {
@@ -42,7 +41,7 @@ async function fetchAndStoreMovies() {
               params: {
                 api_key: TMDB_API_KEY,
                 language: 'tr-TR',
-                page: page,
+                page,
                 region: 'TR'
               }
             }
@@ -57,7 +56,7 @@ async function fetchAndStoreMovies() {
           });
 
           if (movies.length > 0) {
-            const operations = movies.map((movie: { id: any; popularity: any; vote_count: any; }) => ({
+            const operations = movies.map((movie: any) => ({
               updateOne: {
                 filter: { id: movie.id },
                 update: {
@@ -78,15 +77,13 @@ async function fetchAndStoreMovies() {
             console.log(`${endpoint.path} - Sayfa ${page}: ${movies.length} film eklendi`);
           }
 
-          // Rate limit'e takılmamak için bekleme süresini artır
           await new Promise(resolve => setTimeout(resolve, 500));
         } catch (error) {
           console.error(`Hata: ${endpoint.path} - Sayfa ${page}:`, error);
           failedRequests++;
-          if (failedRequests > 10) { // Hata toleransını artır
+          if (failedRequests > 10) {
             throw new Error('Çok fazla başarısız istek');
           }
-          // Hata durumunda daha uzun bekle
           await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
@@ -111,33 +108,29 @@ cron.schedule('0 0 * * *', async () => {
   }
 });
 
-// API endpoint'i
-export async function GET(request: Request) {
+// ✅ GET endpoint
+export async function GET(request: NextRequest, context: any) {
   try {
     await connectDB();
     const { searchParams } = new URL(request.url);
-    
-    // Veritabanı boşsa veya güncelleme zamanı geldiyse, verileri çek
+
     const movieCount = await MovieModel.countDocuments();
     if (movieCount === 0 || await shouldUpdateMovies()) {
       console.log('Veritabanı güncelleniyor...');
       await fetchAndStoreMovies();
     }
 
-    // Sayfalama ve filtreleme parametreleri
     const page = Number(searchParams.get('page')) || 1;
     const limit = 20;
     const skip = (page - 1) * limit;
     const category = searchParams.get('category');
     const sort = searchParams.get('sort') || 'date';
 
-    // Sorgu oluştur
     let query: any = {};
     if (category) {
       query.genre_ids = Number(category);
     }
 
-    // Sıralama seçenekleri
     const sortOptions: { [key: string]: any } = {
       popularity: { popularity: -1, id: 1 },
       rating: { vote_average: -1, id: 1 },
@@ -145,7 +138,6 @@ export async function GET(request: Request) {
       title: { title: 1, id: 1 }
     };
 
-    // Veritabanından filmleri çek
     const [movies, total] = await Promise.all([
       MovieModel.find(query)
         .sort(sortOptions[sort] || sortOptions.date)
@@ -172,24 +164,22 @@ export async function GET(request: Request) {
   }
 }
 
-// Arama endpoint'i ekleyelim
-export async function POST(request: Request) {
+// ✅ POST endpoint
+export async function POST(request: NextRequest, context: any) {
   try {
     await connectDB();
     const { query } = await request.json();
 
-    // Önce veritabanında ara
     const movies = await MovieModel.find({
       $or: [
         { title: { $regex: query, $options: 'i' } },
         { overview: { $regex: query, $options: 'i' } }
       ]
     })
-    .sort({ popularity: -1 })
-    .limit(20)
-    .lean();
+      .sort({ popularity: -1 })
+      .limit(20)
+      .lean();
 
-    // Eğer yeterli sonuç yoksa ve güncelleme zamanı geldiyse, API'den ara
     if (movies.length < 5 && await shouldUpdateMovies()) {
       const response = await axios.get(
         `https://api.themoviedb.org/3/search/movie`,
@@ -202,7 +192,6 @@ export async function POST(request: Request) {
         }
       );
 
-      // Yeni filmleri veritabanına kaydet
       const operations = response.data.results.map((movie: any) => ({
         updateOne: {
           filter: { id: movie.id },
@@ -215,16 +204,15 @@ export async function POST(request: Request) {
         await MovieModel.bulkWrite(operations);
       }
 
-      // Güncel sonuçları getir
       const updatedMovies = await MovieModel.find({
         $or: [
           { title: { $regex: query, $options: 'i' } },
           { overview: { $regex: query, $options: 'i' } }
         ]
       })
-      .sort({ popularity: -1 })
-      .limit(20)
-      .lean();
+        .sort({ popularity: -1 })
+        .limit(20)
+        .lean();
 
       return NextResponse.json({ movies: updatedMovies });
     }
@@ -237,4 +225,4 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-} 
+}
