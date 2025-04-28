@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react'; // Dikkat: Suspense importladık
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
@@ -8,7 +8,7 @@ import Navbar from '@/components/Navbar';
 import MovieCard from '@/components/MovieCard';
 import { Movie } from '@/types/movie';
 
-export default function WatchlistPage() {
+function WatchlistContent() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -174,5 +174,14 @@ export default function WatchlistPage() {
         )}
       </div>
     </div>
+  );
+}
+
+// Asıl export edilen sayfa
+export default function WatchlistPage() {
+  return (
+    <Suspense fallback={<div>Yükleniyor...</div>}>
+      <WatchlistContent />
+    </Suspense>
   );
 }
