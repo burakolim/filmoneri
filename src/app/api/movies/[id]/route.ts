@@ -6,7 +6,8 @@ export async function GET(req: NextRequest, context: any) {
   try {
     await connectDB();
 
-    const movieId = Number(context.params.id);
+    const {id}=await context.params;
+    const movieId=Number(id);
     if (isNaN(movieId)) {
       return NextResponse.json(
         { error: 'Geçersiz film ID' },
