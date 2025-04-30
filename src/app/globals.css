@@ -39,6 +39,27 @@ body {
   @apply backdrop-blur-md bg-white/5 border border-white/10;
 }
 
+/* Mor Geçişli Butonlar ve Yazılar */
+.purple-gradient-text {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-indigo-500;
+  animation: gradientText 3s ease infinite;
+}
+
+.purple-gradient-button {
+  @apply bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 
+    text-white transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/30;
+}
+
+.purple-gradient-border {
+  @apply border border-transparent bg-gradient-to-r from-purple-500 to-indigo-500 bg-clip-border;
+}
+
+@keyframes gradientText {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 /* Neon Efektleri */
 .neon-text {
   text-shadow: 
@@ -103,4 +124,14 @@ body {
 
 .neon-box {
   animation: neonPulse 2s infinite;
+}
+
+/* Kaydırma çubuğunu gizle */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

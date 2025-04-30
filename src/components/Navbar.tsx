@@ -135,8 +135,8 @@ export default function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
           {/* Toggle Button */}
           <button
             onClick={toggleSidebar}
-            className="bg-primary p-2.5 rounded-lg hover:bg-primary/90 
-              transition-colors duration-300 shadow-lg shadow-primary/20"
+            className="purple-gradient-button p-2.5 rounded-lg 
+              transition-colors duration-300 shadow-lg shadow-purple-500/20"
           >
             <svg
               className="w-6 h-6 text-white"
@@ -153,8 +153,8 @@ export default function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
             </svg>
           </button>
 
-          <Link href="/" className="text-2xl font-bold neon-text">
-            MovieMate
+          <Link href="/" className="text-2xl font-bold purple-gradient-text hover:opacity-80 transition-opacity">
+            Movie Mate
           </Link>
 
           {/* Filtreleme Menüsü */}
@@ -165,7 +165,7 @@ export default function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
                 onClick={() => handleSort(option.id)}
                 className={`px-4 py-2 rounded-full transition-all duration-300 flex items-center gap-2
                   ${currentSort === option.id 
-                    ? 'bg-gradient-to-r from-primary to-blue-500 text-white' 
+                    ? 'purple-gradient-button text-white' 
                     : 'text-gray-400 hover:text-white'
                   }`}
               >
@@ -216,9 +216,8 @@ export default function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
             />
             <button
               type="submit"
-              className="bg-gradient-to-r from-primary to-blue-500 hover:from-primary/90 
-                hover:to-blue-500/90 text-white px-4 py-1.5 rounded-r-full text-sm 
-                transition-all duration-300 hover:shadow-lg hover:shadow-primary/20"
+              className="purple-gradient-button px-4 py-1.5 rounded-r-full text-sm 
+                transition-all duration-300"
             >
               Ara
             </button>
@@ -259,54 +258,61 @@ export default function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
         </form>
 
         <div className="flex items-center gap-8">
-          
-          
-          {user ? (
-            <div className="relative group">
-              <button className="flex items-center gap-2 text-white group-hover:text-primary transition-colors duration-300">
-                <div className="w-8 h-8 bg-gradient-to-r from-primary to-blue-500 rounded-full flex items-center justify-center 
-                  transform group-hover:scale-110 transition-all duration-300">
-                  {user.username[0].toUpperCase()}
-                </div>
-                <span className="group-hover:neon-text">{user.username}</span>
-              </button>
-              
-              <div className="absolute right-0 mt-2 w-48 glass-effect rounded-lg shadow-xl overflow-hidden 
-                opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform 
-                group-hover:translate-y-0 translate-y-2">
-                <div className="p-2">
-                  <Link
-                    href="/watchlist"
-                    className="block px-4 py-2 text-white hover:bg-white/10 rounded transition-colors duration-300"
-                  >
-                    İzleme Listem
-                  </Link>
-                  <button
-                    onClick={logout}
-                    className="w-full text-left px-4 py-2 text-white hover:bg-white/10 rounded transition-colors duration-300"
-                  >
-                    Çıkış Yap
-                  </button>
+          <form 
+            ref={searchContainerRef}
+            onSubmit={handleSearch}
+            className="relative flex-1 max-w-md mx-auto"
+          >
+            {/* ... existing search form code ... */}
+          </form>
+
+          <div className="flex items-center gap-12">
+            {user ? (
+              <div className="relative group">
+                <button className="flex items-center gap-2 text-white group-hover:text-purple-400 transition-colors duration-300">
+                  <div className="w-8 h-8 purple-gradient-button rounded-full flex items-center justify-center 
+                    transform group-hover:scale-110 transition-all duration-300">
+                    {user.username[0].toUpperCase()}
+                  </div>
+                  <span className="group-hover:neon-text">{user.username}</span>
+                </button>
+                
+                <div className="absolute right-0 mt-2 w-48 glass-effect rounded-lg shadow-xl overflow-hidden 
+                  opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform 
+                  group-hover:translate-y-0 translate-y-2">
+                  <div className="p-2">
+                    <Link
+                      href="/watchlist"
+                      className="block px-4 py-2 text-white hover:bg-white/10 rounded transition-colors duration-300"
+                    >
+                      İzleme Listem
+                    </Link>
+                    <button
+                      onClick={logout}
+                      className="w-full text-left px-4 py-2 text-white hover:bg-white/10 rounded transition-colors duration-300"
+                    >
+                      Çıkış Yap
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ) : (
-            <>
-              <Link 
-                href="/login" 
-                className="text-white hover:text-primary hover:neon-text transition-all duration-300"
-              >
-                Giriş Yap
-              </Link>
-              <Link 
-                href="/signup"
-                className="bg-gradient-to-r from-primary to-blue-500 hover:from-primary/90 hover:to-blue-500/90 
-                  text-white px-6 py-2 rounded-full transition-all duration-300 hover:shadow-lg hover:shadow-primary/20"
-              >
-                Kayıt Ol
-              </Link>
-            </>
-          )}
+            ) : (
+              <>
+                <Link 
+                  href="/login" 
+                  className="purple-gradient-button px-6 py-2 rounded-full transition-all duration-300"
+                >
+                  Giriş Yap
+                </Link>
+                <Link 
+                  href="/signup"
+                  className="purple-gradient-button px-6 py-2 rounded-full transition-all duration-300"
+                >
+                  Kayıt Ol
+                </Link>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </nav>

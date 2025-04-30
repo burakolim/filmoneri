@@ -84,13 +84,13 @@ export default function HomeContent() {
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
         <div className="mb-8 mt-20">
-          <h2 className="text-xl font-semibold text-white mb-6 neon-text">Film Türleri</h2>
+          <h2 className="text-xl font-semibold purple-gradient-text mb-6">Film Türleri</h2>
           <div className="space-y-3">
             <button
               onClick={() => setSelectedCategory(null)}
               className={`w-full text-left px-4 py-2.5 rounded-full transition-all duration-300 relative group overflow-hidden ${
                 selectedCategory === null
-                  ? 'bg-gradient-to-r from-primary to-blue-500 text-white neon-border'
+                  ? 'purple-gradient-button text-white'
                   : 'text-gray-400 hover:text-white glass-effect'
               }`}
             >
@@ -102,7 +102,7 @@ export default function HomeContent() {
                 onClick={() => setSelectedCategory(category.id)}
                 className={`w-full text-left px-4 py-2.5 rounded-full transition-all duration-300 relative group overflow-hidden ${
                   selectedCategory === category.id
-                    ? `bg-gradient-to-r ${category.color} text-white`
+                    ? 'purple-gradient-button text-white'
                     : 'text-gray-400 hover:text-white glass-effect'
                 }`}
               >
@@ -132,7 +132,7 @@ export default function HomeContent() {
               <button
                 onClick={loadMore}
                 disabled={loading}
-                className="bg-primary hover:bg-primary/80 text-white py-3 px-6 rounded-lg transition-colors disabled:opacity-50"
+                className="purple-gradient-button py-3 px-6 rounded-lg transition-colors disabled:opacity-50"
               >
                 {loading ? 'Yükleniyor...' : 'Daha Fazla Film Göster'}
               </button>

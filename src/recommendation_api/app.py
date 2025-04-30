@@ -1,8 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.decomposition import TruncatedSVD
 from pymongo import MongoClient
 import os
 from dotenv import load_dotenv
@@ -14,7 +13,7 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-# MongoDB bağlantısı ve veri yönetimi
+# MongoDB bağlantısı
 try:
     MONGODB_URI = os.getenv("MONGODB_URI", "mongodb+srv://aykaclarmusa:aykaclarmusa@cluster0.z0spd.mongodb.net/movies?retryWrites=true&w=majority")
     client = MongoClient(MONGODB_URI, 
@@ -36,7 +35,6 @@ def get_movies_from_db():
     global movies_cache
     try:
         if movies_cache is None:
-            # MongoDB'den gerekli verileri al
             movies_data = list(movies_collection.find({}, {
                 '_id': 0,
                 'id': 1,
@@ -47,51 +45,38 @@ def get_movies_from_db():
                 'poster_path': 1,
                 'release_date': 1
             }))
-            
             if not movies_data:
                 print("MongoDB'den film verisi alınamadı.")
                 return None
-                
             movies_cache = movies_data
             print(f"{len(movies_data)} film önbelleğe alındı.")
-            
         return movies_cache
     except Exception as e:
         print(f"Film verisi alma hatası: {str(e)}")
         return None
 
-# ----------------------
 # Content-Based Öneri Sistemi
-# ----------------------
 def get_content_based_recommendations(movie_ids, n=10):
     try:
-        # Önbellekten veya veritabanından filmleri al
         movies_data = get_movies_from_db()
-        
         if not movies_data:
             print("Film verisi bulunamadı.")
             return []
 
-        # ID -> film bilgisi haritası
         movie_map = {movie['id']: movie for movie in movies_data if 'genre_ids' in movie and isinstance(movie['genre_ids'], list)}
 
-        # Hedef filmler
         target_movies = [movie_map[mid] for mid in movie_ids if mid in movie_map]
-        
         if not target_movies:
             print("Hedef film bulunamadı.")
             return []
 
-        # Özellik vektörleri oluştur
         all_genres = sorted({genre for movie in movies_data if 'genre_ids' in movie for genre in movie['genre_ids']})
-        
         feature_matrix = []
         for movie in movies_data:
             if 'genre_ids' not in movie or not isinstance(movie['genre_ids'], list):
                 continue
-                
             genre_vector = [1 if gid in movie['genre_ids'] else 0 for gid in all_genres]
-            vote_average = float(movie.get('vote_average', 5)) / 10  # 0-1 normalizasyon
+            vote_average = float(movie.get('vote_average', 5)) / 10
             feature_matrix.append([vote_average] + genre_vector)
 
         if not feature_matrix:
@@ -100,25 +85,20 @@ def get_content_based_recommendations(movie_ids, n=10):
 
         feature_matrix = np.array(feature_matrix)
 
-        # Hedef filmlerin ortalama özellik vektörünü al
         target_indices = [i for i, movie in enumerate(movies_data) if movie['id'] in movie_ids]
         if not target_indices:
             print("Hedef film indeksleri bulunamadı.")
             return []
-            
+
         target_features = feature_matrix[target_indices].mean(axis=0)
 
-        # Benzerlik hesapla
-        similarities = cosine_similarity(feature_matrix, target_features.reshape(1, -1)).flatten()
-
-        # En yüksek benzerliğe sahip filmleri seç (hedef filmler hariç)
+        similarities = np.dot(feature_matrix, target_features)
         similar_movies = []
         for idx, sim in enumerate(similarities):
             if movies_data[idx]['id'] not in movie_ids:
                 similar_movies.append((movies_data[idx]['id'], sim))
 
         similar_movies.sort(key=lambda x: x[1], reverse=True)
-
         recommended_ids = [movie_id for movie_id, _ in similar_movies[:n]]
         print(f"Önerilen filmler (Content-based): {recommended_ids}")
         return recommended_ids
@@ -127,70 +107,72 @@ def get_content_based_recommendations(movie_ids, n=10):
         print(f"Content-based öneri hatası: {str(e)}")
         return []
 
-# ----------------------
-# Collaborative Filtering Öneri Sistemi
-# ----------------------
+# Yeni Collaborative Filtering (SVD) sistemi
 def get_collaborative_recommendations(movie_ids, n=10):
     try:
-        all_users = list(users_collection.find({}, {'_id': 0, 'watchlist': 1}))
-
-        user_movie_matrix = {}
-        for user in all_users:
-            watchlist = user.get('watchlist', [])
-            for movie_id in watchlist:
-                user_movie_matrix.setdefault(movie_id, set()).add(tuple(watchlist))
-
-        if not user_movie_matrix:
-            print("İşbirlikçi veri yok. İçerik tabanlıya dönülüyor.")
+        users = list(users_collection.find({}, {"_id": 0, "watchlist": 1}))
+        if not users:
+            print("Kullanıcı verisi bulunamadı.")
             return get_content_based_recommendations(movie_ids, n)
 
-        movie_similarity = {}
-        for target_id in movie_ids:
-            target_users = user_movie_matrix.get(target_id, set())
+        # Kullanıcı-film matrisini oluştur
+        all_movie_ids = list({movie_id for user in users for movie_id in user.get('watchlist', [])})
+        movie_id_to_idx = {mid: idx for idx, mid in enumerate(all_movie_ids)}
+        idx_to_movie_id = {idx: mid for mid, idx in movie_id_to_idx.items()}
 
-            for other_id, other_users in user_movie_matrix.items():
-                if other_id in movie_ids:
-                    continue
+        user_movie_matrix = np.zeros((len(users), len(all_movie_ids)))
 
-                intersection = len([user for user in target_users if other_id in user])
-                union = len(target_users) + len(other_users) - intersection
+        for user_idx, user in enumerate(users):
+            for movie_id in user.get('watchlist', []):
+                if movie_id in movie_id_to_idx:
+                    user_movie_matrix[user_idx, movie_id_to_idx[movie_id]] = 1
 
-                similarity = intersection / union if union > 0 else 0
+        if user_movie_matrix.shape[1] < 2:
+            print("Yeterli film verisi yok.")
+            return get_content_based_recommendations(movie_ids, n)
 
-                movie_similarity[other_id] = movie_similarity.get(other_id, 0) + similarity
+        # SVD
+        svd = TruncatedSVD(n_components=min(20, user_movie_matrix.shape[1] - 1))
+        latent_matrix = svd.fit_transform(user_movie_matrix)
+        reconstructed = np.dot(latent_matrix, svd.components_)
 
-        final_recommendations = sorted(movie_similarity.items(), key=lambda x: x[1], reverse=True)[:n]
-        recommended_ids = [movie_id for movie_id, _ in final_recommendations]
+        # Seçilen filmlerin skorlarını ortalamak
+        movie_indices = [movie_id_to_idx[mid] for mid in movie_ids if mid in movie_id_to_idx]
+        if not movie_indices:
+            print("Seçilen film ID'leri kullanıcı-film matrisinde bulunamadı.")
+            return get_content_based_recommendations(movie_ids, n)
 
+        avg_scores = reconstructed[:, movie_indices].mean(axis=1)
+        top_movie_indices = np.argsort(-avg_scores)[:n]
+
+        recommended_ids = [idx_to_movie_id[idx] for idx in top_movie_indices if idx_to_movie_id[idx] not in movie_ids][:n]
         if not recommended_ids:
-            print("İşbirlikçi öneri bulunamadı. İçerik tabanlıya dönülüyor.")
+            print("Öneri bulunamadı, içerik tabanlıya dönülüyor.")
             return get_content_based_recommendations(movie_ids, n)
 
-        print(f"Önerilen filmler (Collaborative): {recommended_ids}")
+        print(f"Önerilen filmler (SVD Collaborative): {recommended_ids}")
         return recommended_ids
 
     except Exception as e:
-        print(f"Collaborative öneri hatası: {str(e)}")
+        print(f"SVD collaborative öneri hatası: {str(e)}")
         return get_content_based_recommendations(movie_ids, n)
 
-# ----------------------
 # API Routes
-# ----------------------
 @app.route('/api/recommendations/content-based', methods=['POST'])
 def content_based():
     try:
         data = request.json
         if not data or 'movie_ids' not in data:
             return jsonify({'error': 'Film ID\'leri gerekli', 'recommendations': []}), 400
-            
+
         movie_ids = data.get('movie_ids', [])
         if not movie_ids:
             return jsonify({'error': 'Film ID\'leri boş olamaz', 'recommendations': []}), 400
-            
+
         recommendations = get_content_based_recommendations(movie_ids)
         if not recommendations:
             return jsonify({'error': 'Öneri bulunamadı', 'recommendations': []}), 404
-            
+
         return jsonify({'recommendations': recommendations})
     except Exception as e:
         print(f"API hatası: {str(e)}")

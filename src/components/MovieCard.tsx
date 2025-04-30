@@ -73,7 +73,7 @@ export default function MovieCard({ movie }: MovieCardProps) {
       <Link href={`/movie/${movie.id}`} className="group perspective">
         <div className="relative transform-gpu transition-all duration-500 group-hover:scale-105">
           {/* Neon Glow Effect */}
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/50 to-blue-500/50 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-pulse"></div>
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500/50 to-indigo-500/50 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-pulse"></div>
           
           <div className="relative bg-black/40 rounded-lg overflow-hidden shadow-2xl">
             {/* Poster with Flash Effect */}
@@ -91,11 +91,11 @@ export default function MovieCard({ movie }: MovieCardProps) {
 
             {/* Content */}
             <div className="p-4">
-              <h3 className="text-white font-medium mb-2 group-hover:text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-500 transition-colors duration-300">
+              <h3 className="text-white font-medium mb-2 group-hover:text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-indigo-500 transition-colors duration-300">
                 {movie.title}
               </h3>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-400 group-hover:text-primary/80 transition-colors duration-300">
+                <span className="text-gray-400 group-hover:text-purple-400 transition-colors duration-300">
                   {movie.release_date ? new Date(movie.release_date).getFullYear() : 'N/A'}
                 </span>
                 <div className="flex items-center gap-2">
@@ -109,7 +109,7 @@ export default function MovieCard({ movie }: MovieCardProps) {
                     onClick={handleWatchlist}
                     className={`p-1.5 rounded-full transition-all duration-300 z-10 ${
                       inWatchlist 
-                        ? 'bg-primary text-white hover:bg-blue-600' 
+                        ? 'purple-gradient-button text-white' 
                         : 'bg-white/10 text-gray-400 hover:bg-white/20 hover:text-white'
                     }`}
                     title={inWatchlist ? "İzleme listesinden çıkar" : "İzleme listesine ekle"}
@@ -133,7 +133,7 @@ export default function MovieCard({ movie }: MovieCardProps) {
             </div>
 
             {/* Hover Border Effect */}
-            <div className="absolute inset-0 border-2 border-transparent group-hover:border-primary/50 rounded-lg transition-colors duration-300"></div>
+            <div className="absolute inset-0 border-2 border-transparent group-hover:border-purple-500/50 rounded-lg transition-colors duration-300"></div>
           </div>
         </div>
       </Link>
