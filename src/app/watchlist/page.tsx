@@ -58,7 +58,7 @@ function WatchlistContent() {
       }
 
       const response = await axios.post(
-        `http://localhost:5000/api/recommendations/${type === 'content' ? 'content-based' : 'collaborative'}`,
+        `https://flask-api-u3bv.onrender.com/api/recommendations/${type === 'content' ? 'content-based' : 'collaborative'}`,
         {
           movie_ids: movies.map((movie) => movie.id),
         }
