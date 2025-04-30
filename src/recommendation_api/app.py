@@ -21,7 +21,7 @@ CORS(app, resources={
 
 # MongoDB bağlantısı
 try:
-    MONGODB_URI = os.getenv("MONGODB_URI", "mongodb+srv://aykaclarmusa:aykaclarmusa@cluster0.z0spd.mongodb.net/movies?retryWrites=true&w=majority")
+    MONGODB_URI = os.getenv("MONGODB_URI")
     client = MongoClient(MONGODB_URI, 
                         serverSelectionTimeoutMS=30000,
                         connectTimeoutMS=30000,
