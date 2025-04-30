@@ -32,7 +32,7 @@ function WatchlistContent() {
         setMovies(validMovies);
         setError(null);
       } catch (error) {
-        console.error('İzleme listesi yüklenirken hata:', error);
+        console.error('İzleme listesi yüklenirken hataa:', error);
         setError('İzleme listesi yüklenirken bir hata oluştu.');
       } finally {
         setIsLoading(false);
