@@ -2,21 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/utils/db';
 import { MovieModel } from '@/models/movie';
 
-// ✅ Vercel uyumlu context interface
-interface GetMovieContext {
-  params: {
-    id: string;
-  };
-}
-
-// ✅ GET endpoint'i
-export async function GET(req: NextRequest, context: GetMovieContext) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     await connectDB();
 
-    const movieId = Number(context.params.id);
-
-    // ID sayıya dönüştürülemezse
+    const movieId = Number(params.id);
     if (isNaN(movieId)) {
       return NextResponse.json(
         { error: 'Geçersiz film ID' },
@@ -24,10 +17,8 @@ export async function GET(req: NextRequest, context: GetMovieContext) {
       );
     }
 
-    // DB'den film bul
     const movie = await MovieModel.findOne({ id: movieId });
 
-    // Film yoksa
     if (!movie) {
       return NextResponse.json(
         { error: 'Film bulunamadı' },
@@ -35,7 +26,6 @@ export async function GET(req: NextRequest, context: GetMovieContext) {
       );
     }
 
-    // Film bulunduysa
     return NextResponse.json(movie);
   } catch (error) {
     console.error('Film detayları alınırken hata:', error);
