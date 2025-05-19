@@ -103,15 +103,36 @@ export default function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
     e.preventDefault();
     if (!searchQuery.trim()) return;
 
-    router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
-    setSearchQuery('');
-    setShowResults(false);
+    try {
+      console.log('Arama yapılıyor:', searchQuery); // Debug için
+      const response = await axios.get(`/api/movies/search?q=${encodeURIComponent(searchQuery)}`);
+      console.log('Arama sonuçları:', response.data); // Debug için
+      
+      if (response.data.movies && response.data.movies.length > 0) {
+        // İlk filme yönlendir
+        const firstMovie = response.data.movies[0];
+        await router.push(`/movie/${firstMovie.id}`);
+      } else {
+        // Sonuç yoksa arama sayfasına yönlendir
+        await router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
+      }
+      
+      setSearchQuery('');
+      setShowResults(false);
+    } catch (error) {
+      console.error('Arama hatası:', error);
+    }
   };
 
-  const handleResultClick = (movieId: number) => {
-    setSearchQuery('');
-    setShowResults(false);
-    router.push(`/movie/${movieId}`);
+  const handleResultClick = async (movieId: number) => {
+    try {
+      setSearchQuery('');
+      setShowResults(false);
+      console.log('Film detay sayfasına yönlendiriliyor:', movieId); // Debug için
+      await router.push(`/movie/${movieId}`);
+    } catch (error) {
+      console.error('Yönlendirme hatası:', error);
+    }
   };
 
   const handleSort = (sortType: string) => {
@@ -127,6 +148,15 @@ export default function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
 
     router.push(`/?${params.toString()}`);
   };
+
+  // URL parametrelerini izle
+  useEffect(() => {
+    const currentSort = searchParams.get('sort');
+    const currentCategory = searchParams.get('category');
+    
+    // Sayfa başına dön
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [searchParams]);
 
   return (
     <nav className="glass-effect sticky top-0 z-50 px-8 py-4 backdrop-blur-lg border-b border-white/10">
@@ -197,73 +227,67 @@ export default function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
           </div>
         </div>
 
-        <form 
-          ref={searchContainerRef}
-          onSubmit={handleSearch}
-          className="relative flex-1 max-w-md mx-auto"
-        >
-          <div className="flex items-center">
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setShowResults(true)}
-              placeholder="Film ara..."
-              className="w-full bg-white/5 border border-white/10 px-4 py-1.5 rounded-l-full 
-                text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 
-                focus:ring-primary/50 focus:border-transparent transition-all duration-300"
-            />
-            <button
-              type="submit"
-              className="purple-gradient-button px-4 py-1.5 rounded-r-full text-sm 
-                transition-all duration-300"
-            >
-              Ara
-            </button>
-          </div>
-          
-          {/* Arama Sonuçları */}
-          {showResults && (searchResults.length > 0 || isSearching) && (
-            <div className="absolute mt-2 w-full bg-black/95 rounded-lg shadow-lg overflow-hidden">
-              {isSearching ? (
-                <div className="p-4 text-center">
-                  <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
-                </div>
-              ) : (
-                searchResults.map((movie) => (
-                  <button
-                    key={movie.id}
-                    onClick={() => handleResultClick(movie.id)}
-                    className="w-full flex items-center gap-2 p-2 hover:bg-white/10 transition-colors text-left"
-                  >
-                    {movie.poster_path && (
-                      <img
-                        src={`https://image.tmdb.org/t/p/w92${movie.poster_path}`}
-                        alt={movie.title}
-                        className="w-8 h-12 object-cover rounded"
-                      />
-                    )}
-                    <div>
-                      <h3 className="text-white text-sm font-medium">{movie.title}</h3>
-                      <p className="text-gray-400 text-xs">
-                        {new Date(movie.release_date).getFullYear()}
-                      </p>
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-          )}
-        </form>
-
         <div className="flex items-center gap-8">
           <form 
             ref={searchContainerRef}
             onSubmit={handleSearch}
             className="relative flex-1 max-w-md mx-auto"
           >
-            {/* ... existing search form code ... */}
+            <div className="flex items-center">
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setShowResults(true)}
+                placeholder="Film ara..."
+                className="w-full bg-white/5 border border-white/10 px-4 py-1.5 rounded-l-full 
+                  text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 
+                  focus:ring-primary/50 focus:border-transparent transition-all duration-300"
+              />
+              <button
+                type="submit"
+                className="purple-gradient-button px-4 py-1.5 rounded-r-full text-sm 
+                  transition-all duration-300"
+              >
+                Ara
+              </button>
+            </div>
+            
+            {/* Arama Sonuçları */}
+            {showResults && (searchResults.length > 0 || isSearching) && (
+              <div className="absolute mt-2 w-full bg-black/95 rounded-lg shadow-lg overflow-y-auto max-h-[60vh] z-50">
+                {isSearching ? (
+                  <div className="p-4 text-center">
+                    <div className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent"></div>
+                  </div>
+                ) : (
+                  <div className="max-h-[60vh] overflow-y-auto">
+                    {searchResults.map((movie) => (
+                      <button
+                        key={movie.id}
+                        onClick={() => handleResultClick(movie.id)}
+                        className="w-full flex items-center gap-2 p-2 hover:bg-white/10 transition-colors text-left"
+                      >
+                        {movie.poster_path && (
+                          <img
+                            src={`https://image.tmdb.org/t/p/w92${movie.poster_path}`}
+                            alt={movie.title}
+                            className="w-8 h-12 object-cover rounded"
+                          />
+                        )}
+                        <div>
+                          <h3 className="text-white text-sm font-medium">{movie.title}</h3>
+                          <p className="text-gray-400 text-xs">
+                            {new Date(movie.release_date).getFullYear()}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </form>
 
           <div className="flex items-center gap-12">
@@ -277,9 +301,9 @@ export default function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
                   <span className="group-hover:neon-text">{user.username}</span>
                 </button>
                 
-                <div className="absolute right-0 mt-2 w-48 glass-effect rounded-lg shadow-xl overflow-hidden 
+                <div className="absolute right-0 mt-2 w-48 bg-black/95 backdrop-blur-lg rounded-lg shadow-xl overflow-hidden 
                   opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform 
-                  group-hover:translate-y-0 translate-y-2">
+                  group-hover:translate-y-0 translate-y-2 border border-white/10">
                   <div className="p-2">
                     <Link
                       href="/watchlist"

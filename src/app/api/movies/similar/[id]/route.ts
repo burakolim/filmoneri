@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/utils/db';
 import { MovieModel } from '@/models/movie';
 
-export async function GET(req: NextRequest, context: any) {
+export async function GET(req: NextRequest, context: { params: { id: string } }) {
   try {
     await connectDB();
 
     const movieId = Number(context.params.id);
+
     if (isNaN(movieId)) {
       return NextResponse.json({ error: 'Geçersiz film ID' }, { status: 400 });
     }

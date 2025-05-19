@@ -44,6 +44,7 @@ export default function HomeContent() {
 
       if (pageNumber === 1) {
         setMovies(response.data.movies);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
         setMovies(prev => [...prev, ...response.data.movies]);
       }
@@ -74,6 +75,11 @@ export default function HomeContent() {
     }
   };
 
+  const handleCategoryChange = (categoryId: number | null) => {
+    setSelectedCategory(categoryId);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   return (
@@ -87,7 +93,7 @@ export default function HomeContent() {
           <h2 className="text-xl font-semibold purple-gradient-text mb-6">Film Türleri</h2>
           <div className="space-y-3">
             <button
-              onClick={() => setSelectedCategory(null)}
+              onClick={() => handleCategoryChange(null)}
               className={`w-full text-left px-4 py-2.5 rounded-full transition-all duration-300 relative group overflow-hidden ${
                 selectedCategory === null
                   ? 'purple-gradient-button text-white'
@@ -99,7 +105,7 @@ export default function HomeContent() {
             {categories.map((category) => (
               <button
                 key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
+                onClick={() => handleCategoryChange(category.id)}
                 className={`w-full text-left px-4 py-2.5 rounded-full transition-all duration-300 relative group overflow-hidden ${
                   selectedCategory === category.id
                     ? 'purple-gradient-button text-white'

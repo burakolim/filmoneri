@@ -39,6 +39,7 @@ export default function MovieDetail() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        console.log('Film ID:', id); // Debug için
         const [movieRes, similarRes] = await Promise.all([
           axios.get(`/api/movies/${id}`),
           axios.get(`/api/movies/similar/${id}`)
@@ -47,18 +48,33 @@ export default function MovieDetail() {
         console.log('DETAY:', movieRes.data);
         console.log('BENZER:', similarRes.data);
   
-        if (movieRes?.data) setMovie(movieRes.data);
-        if (Array.isArray(similarRes?.data?.movies)) {
-          setSimilarMovies(similarRes.data.movies);
+        if (movieRes?.data) {
+          setMovie(movieRes.data);
+        } else {
+          console.error('Film verisi bulunamadı');
+        }
+
+        if (similarRes?.data?.similar) {
+          setSimilarMovies(similarRes.data.similar);
+        } else {
+          console.error('Benzer filmler bulunamadı');
         }
       } catch (error) {
         console.error('Film detayları yüklenirken hata:', error);
+        if (axios.isAxiosError(error)) {
+          console.error('API Yanıtı:', error.response?.data);
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    if (id) {
+      fetchData();
+    } else {
+      console.error('Film ID bulunamadı');
+      setLoading(false);
+    }
   }, [id]);
 
   useEffect(() => {
