@@ -6,7 +6,6 @@ export async function GET(req: NextRequest) {
   try {
     await connectDB();
 
-    // URL'den ID'yi çek
     const id = req.nextUrl.pathname.split('/').pop();
     const movieId = Number(id);
 
