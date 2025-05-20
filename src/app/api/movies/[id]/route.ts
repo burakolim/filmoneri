@@ -16,20 +16,28 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const movie = await MovieModel.findOne({ id: movieId });
+    const currentMovie = await MovieModel.findOne({ id: movieId });
 
-    if (!movie) {
+    if (!currentMovie) {
       return NextResponse.json(
         { error: 'Film bulunamadı' },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(movie);
+    // Benzer filmleri bul
+    const similarMovies = await MovieModel.find({
+      id: { $ne: movieId },
+      genre_ids: { $in: currentMovie.genre_ids }
+    })
+      .sort({ popularity: -1 })
+      .limit(10);
+
+    return NextResponse.json({ movies: similarMovies });
   } catch (error) {
-    console.error('Film detayları alınırken hata:', error);
+    console.error('Benzer filmler alınırken hata:', error);
     return NextResponse.json(
-      { error: 'Film detayları alınırken bir hata oluştu' },
+      { error: 'Benzer filmler alınırken bir hata oluştu' },
       { status: 500 }
     );
   }
