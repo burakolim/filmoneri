@@ -2,15 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/utils/db';
 import { MovieModel } from '@/models/movie';
 
-// ❗️ params destructure DOĞRUDAN İÇİNDEN alınmalı
-export async function GET(
-  req: NextRequest,
-  context: { params: { id: string } }
-) {
+export async function GET(req: NextRequest) {
   try {
     await connectDB();
 
-    const movieId = Number(context.params.id); // 💡 context.params kullan
+    // URL'den ID'yi çek
+    const id = req.nextUrl.pathname.split('/').pop();
+    const movieId = Number(id);
+
     if (isNaN(movieId)) {
       return NextResponse.json(
         { error: 'Geçersiz film ID' },
