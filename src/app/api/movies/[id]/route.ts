@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
+import type { NextApiRequestContext } from 'next';
+
 import { connectDB } from '@/utils/db';
 import { MovieModel } from '@/models/movie';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: NextApiRequestContext
 ) {
   try {
     await connectDB();
 
-    const movieId = Number(params.id);
+    const movieId = Number(context.params.id);
 
     if (isNaN(movieId)) {
       return NextResponse.json(
@@ -27,7 +29,6 @@ export async function GET(
       );
     }
 
-    // Benzer filmleri bul
     const similarMovies = await MovieModel.find({
       id: { $ne: movieId },
       genre_ids: { $in: currentMovie.genre_ids }
