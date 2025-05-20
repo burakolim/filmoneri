@@ -2,43 +2,35 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/utils/db';
 import { MovieModel } from '@/models/movie';
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(req: NextRequest, context: { params: { id: string } }) {
   try {
     await connectDB();
+    console.log('Film ID:', context.params.id); // Debug için
 
-    const movieId = Number(params.id);
-
+    const movieId = Number(context.params.id);
     if (isNaN(movieId)) {
+      console.log('Geçersiz film ID:', context.params.id); // Debug için
       return NextResponse.json(
         { error: 'Geçersiz film ID' },
         { status: 400 }
       );
     }
 
-    const currentMovie = await MovieModel.findOne({ id: movieId });
+    const movie = await MovieModel.findOne({ id: movieId });
+    console.log('Bulunan film:', movie ? 'Var' : 'Yok'); // Debug için
 
-    if (!currentMovie) {
+    if (!movie) {
       return NextResponse.json(
         { error: 'Film bulunamadı' },
         { status: 404 }
       );
     }
 
-    const similarMovies = await MovieModel.find({
-      id: { $ne: movieId },
-      genre_ids: { $in: currentMovie.genre_ids }
-    })
-      .sort({ popularity: -1 })
-      .limit(10);
-
-    return NextResponse.json({ movies: similarMovies });
+    return NextResponse.json(movie);
   } catch (error) {
-    console.error('Benzer filmler alınırken hata:', error);
+    console.error('Film detayları alınırken hata:', error);
     return NextResponse.json(
-      { error: 'Benzer filmler alınırken bir hata oluştu' },
+      { error: 'Film detayları alınırken bir hata oluştu' },
       { status: 500 }
     );
   }
