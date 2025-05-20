@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { NextApiRequestContext } from 'next';
-
 import { connectDB } from '@/utils/db';
 import { MovieModel } from '@/models/movie';
 
 export async function GET(
   req: NextRequest,
-  context: NextApiRequestContext
+  { params }: { params: { id: string } }
 ) {
   try {
     await connectDB();
 
-    const movieId = Number(context.params.id);
+    const movieId = Number(params.id);
 
     if (isNaN(movieId)) {
       return NextResponse.json(
