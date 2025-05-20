@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/utils/db';
 import { MovieModel } from '@/models/movie';
 
-export async function GET(req: NextRequest) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     await connectDB();
 
-    const id = req.nextUrl.pathname.split('/').pop();
-    const movieId = Number(id);
+    const movieId = Number(params.id);
 
     if (isNaN(movieId)) {
       return NextResponse.json(
