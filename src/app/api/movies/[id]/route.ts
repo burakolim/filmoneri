@@ -2,14 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/utils/db';
 import { MovieModel } from '@/models/movie';
 
-export async function GET(req: NextRequest, context: { params: { id: string } }) {
+// Route parametresi tipi
+type RouteParams = {
+  params: {
+    id: string;
+  };
+};
+
+export async function GET(req: NextRequest, { params }: RouteParams) {
   try {
     await connectDB();
-    console.log('Film ID:', context.params.id); // Debug için
 
-    const movieId = Number(context.params.id);
+    const movieId = Number(params.id);
     if (isNaN(movieId)) {
-      console.log('Geçersiz film ID:', context.params.id); // Debug için
       return NextResponse.json(
         { error: 'Geçersiz film ID' },
         { status: 400 }
@@ -17,7 +22,6 @@ export async function GET(req: NextRequest, context: { params: { id: string } })
     }
 
     const movie = await MovieModel.findOne({ id: movieId });
-    console.log('Bulunan film:', movie ? 'Var' : 'Yok'); // Debug için
 
     if (!movie) {
       return NextResponse.json(
