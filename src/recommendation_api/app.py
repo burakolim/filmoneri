@@ -6,6 +6,10 @@ from pymongo import MongoClient
 import os
 from dotenv import load_dotenv
 import pandas as pd
+import threading
+import time
+import requests
+from datetime import datetime, timedelta
 
 # .env dosyasını yükle
 load_dotenv()
@@ -34,32 +38,106 @@ try:
 except Exception as e:
     print(f"MongoDB bağlantı hatası: {str(e)}")
 
-# Film verilerini saklayacak global değişken
+# Film verilerini saklayacak global değişken ve önbellek yönetimi
 movies_cache = None
+cache_timestamp = None
+CACHE_DURATION = timedelta(hours=1)  # Önbellek 1 saat geçerli
+
+def refresh_cache():
+    """Önbelleği yenile"""
+    global movies_cache, cache_timestamp
+    try:
+        print("Önbellek yenileniyor...")
+        movies_data = list(movies_collection.find({}, {
+            '_id': 0,
+            'id': 1,
+            'genre_ids': 1,
+            'vote_average': 1,
+            'title': 1,
+            'overview': 1,
+            'poster_path': 1,
+            'release_date': 1
+        }))
+        
+        if movies_data:
+            movies_cache = movies_data
+            cache_timestamp = datetime.now()
+            print(f"Önbellek güncellendi: {len(movies_data)} film")
+        else:
+            print("MongoDB'den veri alınamadı")
+    except Exception as e:
+        print(f"Önbellek yenileme hatası: {str(e)}")
 
 def get_movies_from_db():
-    global movies_cache
+    global movies_cache, cache_timestamp
+    
+    # Önbellek kontrolü
+    if (cache_timestamp is None or 
+        datetime.now() - cache_timestamp > CACHE_DURATION or 
+        movies_cache is None):
+        refresh_cache()
+    
+    return movies_cache
+
+def keep_alive():
+    """Render.com'da uygulamayı aktif tutmak için kendini ping'le"""
+    def ping_self():
+        while True:
+            try:
+                time.sleep(14 * 60)  # 14 dakikada bir ping at
+                # Kendi API'nı ping'le
+                response = requests.get("https://flask-api-u3bv.onrender.com/api/health", timeout=10)
+                print(f"Keep-alive ping: {response.status_code}")
+            except Exception as e:
+                print(f"Keep-alive ping hatası: {str(e)}")
+    
+    # Arka plan thread'i başlat
+    thread = threading.Thread(target=ping_self, daemon=True)
+    thread.start()
+
+# Uygulama başlarken keep-alive başlat
+keep_alive()
+
+# Health check endpoint
+@app.route('/api/health', methods=['GET'])
+def health_check():
     try:
-        if movies_cache is None:
-            movies_data = list(movies_collection.find({}, {
-                '_id': 0,
-                'id': 1,
-                'genre_ids': 1,
-                'vote_average': 1,
-                'title': 1,
-                'overview': 1,
-                'poster_path': 1,
-                'release_date': 1
-            }))
-            if not movies_data:
-                print("MongoDB'den film verisi alınamadı.")
-                return None
-            movies_cache = movies_data
-            print(f"{len(movies_data)} film önbelleğe alındı.")
-        return movies_cache
+        # MongoDB bağlantısını test et
+        client.admin.command('ping')
+        
+        # Önbellek durumunu kontrol et
+        cache_status = "active" if movies_cache else "empty"
+        cache_age = (datetime.now() - cache_timestamp).total_seconds() if cache_timestamp else None
+        
+        return jsonify({
+            'status': 'healthy',
+            'mongodb': 'connected',
+            'cache_status': cache_status,
+            'cache_age_seconds': cache_age,
+            'timestamp': datetime.now().isoformat()
+        })
     except Exception as e:
-        print(f"Film verisi alma hatası: {str(e)}")
-        return None
+        return jsonify({
+            'status': 'unhealthy',
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+# Cache refresh endpoint
+@app.route('/api/refresh-cache', methods=['POST'])
+def refresh_cache_endpoint():
+    try:
+        refresh_cache()
+        return jsonify({
+            'message': 'Önbellek başarıyla yenilendi',
+            'cache_size': len(movies_cache) if movies_cache else 0,
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
 
 # Content-Based Öneri Sistemi
 def get_content_based_recommendations(movie_ids, n=10):

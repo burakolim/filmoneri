@@ -46,6 +46,35 @@ function WatchlistContent() {
     }
   }, [user, loading, router]);
 
+  // API sağlık kontrolü ve cache yenileme
+  useEffect(() => {
+    const checkApiHealth = async () => {
+      try {
+        const response = await axios.get('https://flask-api-u3bv.onrender.com/api/health', {
+          timeout: 10000
+        });
+        console.log('API Health:', response.data);
+        
+        // Eğer cache boşsa veya eski ise yenile
+        if (response.data.cache_status === 'empty' || 
+            (response.data.cache_age_seconds && response.data.cache_age_seconds > 3600)) {
+          console.log('Cache yenileniyor...');
+          await axios.post('https://flask-api-u3bv.onrender.com/api/refresh-cache');
+        }
+      } catch (error) {
+        console.error('API health check hatası:', error);
+      }
+    };
+
+    // Sayfa yüklendiğinde health check yap
+    checkApiHealth();
+
+    // Her 10 dakikada bir health check yap
+    const healthCheckInterval = setInterval(checkApiHealth, 10 * 60 * 1000);
+
+    return () => clearInterval(healthCheckInterval);
+  }, []);
+
   const getRecommendations = async (type: 'content' | 'collaborative') => {
     try {
       setIsLoading(true);
@@ -59,10 +88,20 @@ function WatchlistContent() {
         return;
       }
 
+      // API'nın aktif olduğundan emin ol
+      try {
+        await axios.get('https://flask-api-u3bv.onrender.com/api/health', { timeout: 5000 });
+      } catch (healthError) {
+        console.warn('API health check başarısız, yine de devam ediliyor...');
+      }
+
       const response = await axios.post(
         `https://flask-api-u3bv.onrender.com/api/recommendations/${type === 'content' ? 'content-based' : 'collaborative'}`,
         {
           movie_ids: movies.map((movie) => movie.id),
+        },
+        {
+          timeout: 30000 // 30 saniye timeout
         }
       );
 
@@ -98,7 +137,11 @@ function WatchlistContent() {
       }
     } catch (error) {
       console.error('Öneriler alınırken hata:', error);
-      setError('Öneriler alınırken bir hata oluştu.');
+      if (axios.isAxiosError(error) && error.code === 'ECONNABORTED') {
+        setError('API yanıt vermiyor. Lütfen birkaç dakika sonra tekrar deneyin.');
+      } else {
+        setError('Öneriler alınırken bir hata oluştu.');
+      }
       setRecommendations([]);
     } finally {
       setIsLoading(false);
